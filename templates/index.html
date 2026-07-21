@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Downloader</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Video Downloader</h1>
+        <p class="subtitle">YouTube, Instagram, Facebook, TikTok y mas</p>
+
+        <form id="url-form">
+            <div class="input-wrapper">
+                <input type="text" id="url-input" placeholder="Pega la URL del video aqui..." required>
+                <button type="button" id="clear-btn" class="clear-btn" title="Limpiar">&times;</button>
+            </div>
+            <button type="submit" id="info-btn">Obtener info</button>
+        </form>
+
+        <div id="error" class="error hidden"></div>
+
+        <div id="video-info" class="hidden">
+            <div class="video-card">
+                <img id="thumbnail" src="" alt="thumbnail">
+                <div class="video-details">
+                    <h2 id="title"></h2>
+                    <p id="uploader"></p>
+                    <p id="duration"></p>
+                </div>
+            </div>
+
+            <form id="download-form">
+                <input type="hidden" id="dl-url" name="url">
+                <input type="hidden" id="dl-custom-name" name="custom_name">
+                <select id="format-select" name="format_id"></select>
+                <button type="submit" id="download-btn">Descargar</button>
+            </form>
+        </div>
+
+        <div id="name-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3>Nombre del archivo muy largo</h3>
+                <p>Escribe con que nombre quieres guardarlo:</p>
+                <input type="text" id="custom-name-input" placeholder="Nombre del archivo...">
+                <div class="modal-buttons">
+                    <button type="button" id="modal-cancel">Cancelar</button>
+                    <button type="button" id="modal-confirm">Descargar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="progress-section" class="hidden">
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-info">
+                    <span id="progress-percent">0%</span>
+                    <span id="progress-status">Preparando...</span>
+                    <span id="progress-speed"></span>
+                    <span id="progress-eta"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urlForm = document.getElementById("url-form");
+        const downloadForm = document.getElementById("download-form");
+        const videoInfo = document.getElementById("video-info");
+        const errorDiv = document.getElementById("error");
+        const progressSection = document.getElementById("progress-section");
+        const nameModal = document.getElementById("name-modal");
+        let currentTitle = "";
+
+        document.getElementById("clear-btn").addEventListener("click", () => {
+            document.getElementById("url-input").value = "";
+            videoInfo.classList.add("hidden");
+            errorDiv.classList.add("hidden");
+            progressSection.classList.add("hidden");
+        });
+
+        urlForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const url = document.getElementById("url-input").value.trim();
+            errorDiv.classList.add("hidden");
+            videoInfo.classList.add("hidden");
+            progressSection.classList.add("hidden");
+
+            try {
+                const res = await fetch("/info", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({url}),
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    errorDiv.textContent = data.error || "Error al obtener info";
+                    errorDiv.classList.remove("hidden");
+                    return;
+                }
+
+                document.getElementById("thumbnail").src = data.thumbnail;
+                document.getElementById("title").textContent = data.title;
+                document.getElementById("uploader").textContent = data.uploader;
+                document.getElementById("duration").textContent = data.duration
+                    ? `Duracion: ${Math.floor(data.duration / 60)}:${String(data.duration % 60).padStart(2, "0")}`
+                    : "";
+                document.getElementById("dl-url").value = url;
+                currentTitle = data.title;
+
+                const select = document.getElementById("format-select");
+                select.innerHTML = "";
+                data.formats.forEach((f) => {
+                    const opt = document.createElement("option");
+                    opt.value = f.format_id;
+                    opt.textContent = f.filesize ? `${f.label} (~${f.filesize} MB)` : f.label;
+                    select.appendChild(opt);
+                });
+
+                videoInfo.classList.remove("hidden");
+            } catch {
+                errorDiv.textContent = "Error de conexion";
+                errorDiv.classList.remove("hidden");
+            }
+        });
+
+        function startDownload(customName) {
+            document.getElementById("dl-custom-name").value = customName || "";
+            const btn = document.getElementById("download-btn");
+            btn.disabled = true;
+            btn.textContent = "Descargando...";
+            errorDiv.classList.add("hidden");
+            videoInfo.classList.add("hidden");
+            progressSection.classList.remove("hidden");
+
+            updateProgress(0, "Iniciando descarga...", null, null);
+
+            const formData = new FormData(downloadForm);
+
+            fetch("/download", {method: "POST", body: formData})
+                .then((res) => res.json().then((data) => ({res, data})))
+                .then(({res, data}) => {
+                    if (!res.ok) {
+                        errorDiv.textContent = data.error || "Error al iniciar descarga";
+                        errorDiv.classList.remove("hidden");
+                        resetUI();
+                        return;
+                    }
+
+                    const jobId = data.job_id;
+                    const evtSource = new EventSource(`/progress/${jobId}`);
+
+                    evtSource.onmessage = (event) => {
+                        const job = JSON.parse(event.data);
+
+                        if (job.status === "downloading") {
+                            updateProgress(job.percent, "Descargando...", job.speed, job.eta);
+                        } else if (job.status === "processing") {
+                            updateProgress(100, "Procesando archivo...", null, null);
+                        } else if (job.status === "done") {
+                            evtSource.close();
+                            updateProgress(100, "Listo!", null, null);
+                            window.location.href = `/file/${jobId}`;
+                            setTimeout(resetUI, 1500);
+                        } else if (job.status === "error") {
+                            evtSource.close();
+                            errorDiv.textContent = job.error || "Error al descargar";
+                            errorDiv.classList.remove("hidden");
+                            resetUI();
+                        }
+                    };
+
+                    evtSource.onerror = () => {
+                        evtSource.close();
+                        errorDiv.textContent = "Error de conexion con el servidor";
+                        errorDiv.classList.remove("hidden");
+                        resetUI();
+                    };
+                })
+                .catch(() => {
+                    errorDiv.textContent = "Error de conexion";
+                    errorDiv.classList.remove("hidden");
+                    resetUI();
+                });
+        }
+
+        downloadForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const titleBytes = new TextEncoder().encode(currentTitle).length;
+            if (titleBytes > 200) {
+                document.getElementById("custom-name-input").value = currentTitle.substring(0, 50);
+                nameModal.classList.remove("hidden");
+            } else {
+                startDownload(null);
+            }
+        });
+
+        document.getElementById("modal-cancel").addEventListener("click", () => {
+            nameModal.classList.add("hidden");
+            resetUI();
+        });
+
+        document.getElementById("modal-confirm").addEventListener("click", () => {
+            const name = document.getElementById("custom-name-input").value.trim();
+            if (!name) return;
+            nameModal.classList.add("hidden");
+            startDownload(name);
+        });
+
+        function updateProgress(percent, status, speed, eta) {
+            document.getElementById("progress-fill").style.width = `${percent}%`;
+            document.getElementById("progress-percent").textContent = `${percent}%`;
+            document.getElementById("progress-status").textContent = status;
+            document.getElementById("progress-speed").textContent = speed ? `${speed} MB/s` : "";
+            document.getElementById("progress-eta").textContent = eta ? `${eta}s restantes` : "";
+        }
+
+        function resetUI() {
+            progressSection.classList.add("hidden");
+            videoInfo.classList.remove("hidden");
+            const btn = document.getElementById("download-btn");
+            btn.disabled = false;
+            btn.textContent = "Descargar";
+        }
+    </script>
+</body>
+</html>

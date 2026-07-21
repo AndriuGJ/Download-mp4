@@ -1,0 +1,301 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0f0f0f;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    width: 100%;
+    max-width: 640px;
+    padding: 2rem;
+    text-align: center;
+}
+
+h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.25rem;
+    background: linear-gradient(135deg, #ff0050, #00f2ea);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+    color: #888;
+    margin-bottom: 2rem;
+}
+
+#url-form {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.input-wrapper {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+#url-input {
+    width: 100%;
+    padding: 0.85rem 2.5rem 0.85rem 1rem;
+    border: 2px solid #333;
+    border-radius: 8px;
+    background: #1a1a1a;
+    color: #fff;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+#url-input:focus {
+    border-color: #ff0050;
+}
+
+.clear-btn {
+    position: absolute;
+    right: 0.5rem;
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 1.4rem;
+    padding: 0;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.clear-btn:hover {
+    color: #ff0050;
+}
+
+button {
+    padding: 0.85rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #ff0050, #d90043);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+button:hover {
+    opacity: 0.85;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.error {
+    background: #3a1010;
+    border: 1px solid #ff4444;
+    color: #ff6666;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    text-align: left;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.video-card {
+    display: flex;
+    gap: 1rem;
+    background: #1a1a1a;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    text-align: left;
+}
+
+.video-card img {
+    width: 200px;
+    height: 120px;
+    object-fit: cover;
+}
+
+.video-details {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.video-details h2 {
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.video-details p {
+    color: #888;
+    font-size: 0.85rem;
+}
+
+#download-form {
+    display: flex;
+    gap: 0.5rem;
+}
+
+#format-select {
+    flex: 1;
+    padding: 0.85rem 1rem;
+    border: 2px solid #333;
+    border-radius: 8px;
+    background: #1a1a1a;
+    color: #fff;
+    font-size: 1rem;
+    outline: none;
+    cursor: pointer;
+}
+
+#format-select:focus {
+    border-color: #ff0050;
+}
+
+.progress-container {
+    background: #1a1a1a;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 10px;
+    background: #333;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+}
+
+.progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #ff0050, #00f2ea);
+    border-radius: 5px;
+    transition: width 0.3s ease;
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: #aaa;
+}
+
+#progress-percent {
+    color: #fff;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+#progress-status {
+    color: #00f2ea;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.modal-content {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 1.5rem;
+    width: 90%;
+    max-width: 400px;
+    text-align: left;
+}
+
+.modal-content h3 {
+    margin-bottom: 0.5rem;
+    color: #ff0050;
+}
+
+.modal-content p {
+    color: #aaa;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.modal-content input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #333;
+    border-radius: 8px;
+    background: #0f0f0f;
+    color: #fff;
+    font-size: 1rem;
+    outline: none;
+    margin-bottom: 1rem;
+}
+
+.modal-content input:focus {
+    border-color: #ff0050;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.modal-buttons button {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+}
+
+#modal-cancel {
+    background: #333;
+}
+
+#modal-confirm {
+    background: linear-gradient(135deg, #ff0050, #d90043);
+}
+
+@media (max-width: 500px) {
+    .video-card {
+        flex-direction: column;
+    }
+    .video-card img {
+        width: 100%;
+        height: 180px;
+    }
+    #url-form, #download-form {
+        flex-direction: column;
+    }
+    .progress-info {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+}
